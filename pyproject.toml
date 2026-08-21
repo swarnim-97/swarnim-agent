@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "swarnim-agent"
+version = "0.1.0"
+description = "A small terminal CLI built to learn interactive application fundamentals."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "prompt-toolkit>=3.0,<4.0",
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest>=8.0,<9.0",
+]
+
+[project.scripts]
+swarnim-agent = "swarnim_agent.main:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]

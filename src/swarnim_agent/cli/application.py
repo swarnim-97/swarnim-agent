@@ -1,11 +1,10 @@
-from prompt_toolkit.application import Application, run_in_terminal
+from prompt_toolkit.application import Application
 from prompt_toolkit.formatted_text import HTML
-from prompt_toolkit.key_binding.key_processor import KeyPressEvent
 from prompt_toolkit.layout import Layout
 from prompt_toolkit.shortcuts import print_formatted_text
 from prompt_toolkit.widgets import TextArea
 
-from swarnim_agent.cli.handlers import echo_text, should_exit
+from swarnim_agent.cli.controller import CLIController
 from swarnim_agent.cli.keybindings import create_key_bindings
 
 
@@ -14,21 +13,16 @@ def create_application() -> Application[None]:
     input_area = TextArea(
         prompt="> ",
         multiline=False,
+        height=1,
     )
-
-    def handle_submit(event: KeyPressEvent) -> None:
-        submitted_text = input_area.text
-        input_area.buffer.reset()
-
-        if should_exit(submitted_text):
-            event.app.exit()
-            return
-
-        run_in_terminal(lambda: print_formatted_text(echo_text(submitted_text)))
+    controller = CLIController(input_area)
 
     application: Application[None] = Application(
         layout=Layout(input_area),
-        key_bindings=create_key_bindings(handle_submit),
+        key_bindings=create_key_bindings(
+            on_submit=controller.handle_submit,
+            on_exit=controller.handle_exit,
+        ),
         full_screen=False,
     )
     return application

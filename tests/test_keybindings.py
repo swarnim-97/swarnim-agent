@@ -4,7 +4,10 @@ from swarnim_agent.cli.keybindings import create_key_bindings
 
 
 def test_expected_key_bindings_are_registered() -> None:
-    bindings = create_key_bindings(lambda event: None)
+    bindings = create_key_bindings(
+        on_submit=lambda event: None,
+        on_exit=lambda event: None,
+    )
     registered_keys = {binding.keys for binding in bindings.bindings}
 
     assert (Keys.ControlM,) in registered_keys

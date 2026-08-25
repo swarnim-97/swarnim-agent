@@ -19,10 +19,7 @@ def create_application() -> Application[None]:
 
     application: Application[None] = Application(
         layout=Layout(input_area),
-        key_bindings=create_key_bindings(
-            on_submit=controller.handle_submit,
-            on_exit=controller.handle_exit,
-        ),
+        key_bindings=create_key_bindings(controller),
         full_screen=False,
     )
     return application

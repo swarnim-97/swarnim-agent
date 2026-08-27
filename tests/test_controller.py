@@ -7,7 +7,7 @@ from swarnim_agent.cli.controller import CLIController
 
 def test_handle_submit_clears_and_echoes_input() -> None:
     input_area = TextArea(text="hello", multiline=False, height=1)
-    controller = CLIController(input_area)
+    controller = CLIController(input_area, prompt_text="> ")
     event = MagicMock()
 
     with patch("swarnim_agent.cli.controller.run_in_terminal") as run_in_terminal:
@@ -21,12 +21,12 @@ def test_handle_submit_clears_and_echoes_input() -> None:
     with patch("swarnim_agent.cli.controller.print_formatted_text") as print_text:
         render_output()
 
-    print_text.assert_called_once_with("hello")
+    print_text.assert_called_once_with("> hello\nhello")
 
 
 def test_handle_submit_exits_for_exit_command() -> None:
     input_area = TextArea(text=" /EXIT ", multiline=False, height=1)
-    controller = CLIController(input_area)
+    controller = CLIController(input_area, prompt_text="> ")
     event = MagicMock()
 
     with patch("swarnim_agent.cli.controller.run_in_terminal") as run_in_terminal:
@@ -38,7 +38,10 @@ def test_handle_submit_exits_for_exit_command() -> None:
 
 
 def test_handle_exit_closes_application() -> None:
-    controller = CLIController(TextArea(multiline=False, height=1))
+    controller = CLIController(
+        TextArea(multiline=False, height=1),
+        prompt_text="> ",
+    )
     event = MagicMock()
 
     controller.handle_exit(event)

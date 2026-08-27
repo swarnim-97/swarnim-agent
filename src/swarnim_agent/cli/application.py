@@ -10,12 +10,13 @@ from swarnim_agent.cli.keybindings import create_key_bindings
 
 def create_application() -> Application[None]:
     """Build the prompt-toolkit application used by the echo CLI."""
+    prompt_text = "> "
     input_area = TextArea(
-        prompt="> ",
+        prompt=prompt_text,
         multiline=False,
         height=1,
     )
-    controller = CLIController(input_area)
+    controller = CLIController(input_area, prompt_text)
 
     application: Application[None] = Application(
         layout=Layout(input_area),

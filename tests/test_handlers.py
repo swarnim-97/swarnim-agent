@@ -1,12 +1,12 @@
-from swarnim_agent.cli.handlers import echo_text, should_exit
+from swarnim_agent.cli.handlers import should_exit, text_length
 
 
-def test_echo_text_returns_input_unchanged() -> None:
-    assert echo_text("Hello, CLI!") == "Hello, CLI!"
+def test_text_length_returns_character_count_as_text() -> None:
+    assert text_length("hello") == "5"
 
 
-def test_echo_text_preserves_whitespace() -> None:
-    assert echo_text("  keep this spacing  ") == "  keep this spacing  "
+def test_text_length_counts_whitespace() -> None:
+    assert text_length(" a ") == "3"
 
 
 def test_should_exit_recognizes_command() -> None:

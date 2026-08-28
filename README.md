@@ -1,7 +1,9 @@
 # Swarnim Agent
 
-This project starts as a small interactive echo CLI. It accepts text in the
-terminal and displays the same text back to the user.
+This learning-oriented CLI accepts terminal input and processes it on a managed
+background thread. Its current deterministic processor returns the submitted
+text's character count, allowing the input and output paths to remain visibly
+different before an agent or LLM is introduced.
 
 ## Setup
 
@@ -22,3 +24,15 @@ python -m swarnim_agent
 ```
 
 Press `Enter` to submit text. Type `/exit` or press `Ctrl+C` to close the CLI.
+
+Example:
+
+```text
+> hello
+5
+>
+```
+
+The prompt-toolkit UI thread records and enqueues input. A background worker
+consumes queued text in FIFO order and prints the processed result safely above
+the active prompt.

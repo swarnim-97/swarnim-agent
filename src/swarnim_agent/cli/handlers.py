@@ -6,6 +6,6 @@ def should_exit(text: str) -> bool:
     return text.strip().lower() == EXIT_COMMAND
 
 
-def echo_text(text: str):
-    """Return submitted text unchanged."""
-    return len(text)
+def text_length(text: str) -> str:
+    """Return the number of submitted characters as text."""
+    return str(len(text))

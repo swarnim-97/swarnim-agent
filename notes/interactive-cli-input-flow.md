@@ -3,11 +3,15 @@
 These notes collect the questions asked while building the prompt-toolkit
 input, callback, and transcript flow in Swarnim Agent.
 
+> This document records the initial synchronous transcript stage. Processing
+> now runs through a queue and background worker. See
+> `notes/background-processing-flow.md` for the current execution flow.
+
 ## Current implementation note
 
-The terminal flow does not depend on what the pure handler returns. At the time
-of writing, `echo_text()` in `cli/handlers.py` returns `len(text)`. Therefore,
-submitting `hello` currently produces:
+The terminal flow does not depend on what the pure handler returns. During this
+stage, the handler returned `len(text)`. Therefore, submitting `hello`
+produced:
 
 ```text
 > hello

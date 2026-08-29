@@ -1,9 +1,9 @@
 # Swarnim Agent
 
 This learning-oriented CLI accepts terminal input and processes it on a managed
-background thread. Its current deterministic processor streams complete output
-lines ending with the submitted text's character count, allowing the input and
-output paths to remain visibly different before an agent or LLM is introduced.
+background thread. Its current deterministic agent streams complete output
+lines ending with the submitted text's character count. It establishes an agent
+boundary without introducing an LLM, provider, tools, or conversation state.
 
 ## Setup
 
@@ -35,5 +35,5 @@ Calculating character count...
 ```
 
 The prompt-toolkit UI thread records and enqueues input. A background worker
-consumes queued text in FIFO order and prints each processed line safely above
-the active prompt.
+consumes queued text in FIFO order, calls the deterministic agent, and prints
+each resulting line safely above the active prompt.

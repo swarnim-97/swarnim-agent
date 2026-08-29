@@ -8,8 +8,9 @@ from prompt_toolkit.patch_stdout import patch_stdout
 from prompt_toolkit.shortcuts import print_formatted_text
 from prompt_toolkit.widgets import TextArea
 
+from swarnim_agent.agents.base import Agent
+from swarnim_agent.agents.character_count import CharacterCountAgent
 from swarnim_agent.cli.controller import CLIController
-from swarnim_agent.cli.handlers import text_length_lines
 from swarnim_agent.cli.keybindings import create_key_bindings
 from swarnim_agent.processing.worker import BackgroundWorker
 
@@ -25,6 +26,7 @@ class CLIRuntime:
 def create_runtime() -> CLIRuntime:
     """Construct and connect the CLI application and background worker."""
     prompt_text = "> "
+    agent: Agent = CharacterCountAgent()
     input_queue: Queue[object] = Queue()
     input_area = TextArea(
         prompt=prompt_text,
@@ -38,7 +40,7 @@ def create_runtime() -> CLIRuntime:
     )
     worker = BackgroundWorker(
         input_queue=input_queue,
-        process=text_length_lines,
+        process=agent.run,
         on_line=controller.render_line,
         on_error=controller.render_error,
     )

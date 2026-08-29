@@ -9,7 +9,7 @@ from prompt_toolkit.shortcuts import print_formatted_text
 from prompt_toolkit.widgets import TextArea
 
 from swarnim_agent.cli.controller import CLIController
-from swarnim_agent.cli.handlers import text_length
+from swarnim_agent.cli.handlers import text_length_lines
 from swarnim_agent.cli.keybindings import create_key_bindings
 from swarnim_agent.processing.worker import BackgroundWorker
 
@@ -38,8 +38,8 @@ def create_runtime() -> CLIRuntime:
     )
     worker = BackgroundWorker(
         input_queue=input_queue,
-        process=text_length,
-        on_result=controller.render_result,
+        process=text_length_lines,
+        on_line=controller.render_line,
         on_error=controller.render_error,
     )
 

@@ -38,9 +38,9 @@ class CLIController:
         """Close the terminal application."""
         event.app.exit()
 
-    def render_result(self, result: str) -> None:
-        """Print a completed background result above the active prompt."""
-        print_formatted_text(result)
+    def render_line(self, line: str) -> None:
+        """Print one background result line above the active prompt."""
+        print_formatted_text(line)
 
     def render_error(self, error: Exception) -> None:
         """Print a background-processing error above the active prompt."""

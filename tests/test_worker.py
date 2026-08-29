@@ -1,23 +1,25 @@
+from collections.abc import Iterator
 from queue import Queue
 from threading import Event
 
 from swarnim_agent.processing.worker import BackgroundWorker
 
 
-def test_worker_processes_text_on_background_thread() -> None:
+def test_worker_streams_lines_on_background_thread() -> None:
     input_queue: Queue[object] = Queue()
-    results: list[str] = []
+    lines: list[str] = []
     errors: list[Exception] = []
     completed = Event()
 
-    def on_result(result: str) -> None:
-        results.append(result)
-        completed.set()
+    def on_line(line: str) -> None:
+        lines.append(line)
+        if len(lines) == 2:
+            completed.set()
 
     worker = BackgroundWorker(
         input_queue=input_queue,
-        process=lambda text: str(len(text)),
-        on_result=on_result,
+        process=lambda text: ("Calculating...", str(len(text))),
+        on_line=on_line,
         on_error=errors.append,
     )
 
@@ -28,25 +30,28 @@ def test_worker_processes_text_on_background_thread() -> None:
     finally:
         worker.stop()
 
-    assert results == ["5"]
+    assert lines == ["Calculating...", "5"]
     assert errors == []
     assert worker.is_running is False
 
 
 def test_worker_preserves_fifo_order() -> None:
     input_queue: Queue[object] = Queue()
-    results: list[str] = []
+    lines: list[str] = []
     completed = Event()
 
-    def on_result(result: str) -> None:
-        results.append(result)
-        if len(results) == 3:
+    def process(text: str) -> tuple[str, str]:
+        return f"{text}: started", f"{text}: finished"
+
+    def on_line(line: str) -> None:
+        lines.append(line)
+        if len(lines) == 6:
             completed.set()
 
     worker = BackgroundWorker(
         input_queue=input_queue,
-        process=str.upper,
-        on_result=on_result,
+        process=process,
+        on_line=on_line,
         on_error=lambda error: None,
     )
 
@@ -59,29 +64,41 @@ def test_worker_preserves_fifo_order() -> None:
     finally:
         worker.stop()
 
-    assert results == ["FIRST", "SECOND", "THIRD"]
+    assert lines == [
+        "first: started",
+        "first: finished",
+        "second: started",
+        "second: finished",
+        "third: started",
+        "third: finished",
+    ]
 
 
-def test_worker_reports_error_and_continues_processing() -> None:
+def test_worker_reports_partial_stream_error_and_continues_processing() -> None:
     input_queue: Queue[object] = Queue()
-    results: list[str] = []
+    lines: list[str] = []
     errors: list[Exception] = []
     completed = Event()
 
-    def process(text: str) -> str:
+    def process(text: str) -> Iterator[str]:
         if text == "bad":
+            yield "bad: started"
             raise ValueError("bad input")
-        return text.upper()
+        yield text.upper()
 
-    def on_result(result: str) -> None:
-        results.append(result)
-        completed.set()
+    def on_line(line: str) -> None:
+        lines.append(line)
+        if line == "GOOD":
+            completed.set()
+
+    def on_error(error: Exception) -> None:
+        errors.append(error)
 
     worker = BackgroundWorker(
         input_queue=input_queue,
         process=process,
-        on_result=on_result,
-        on_error=errors.append,
+        on_line=on_line,
+        on_error=on_error,
     )
 
     worker.start()
@@ -95,15 +112,134 @@ def test_worker_reports_error_and_continues_processing() -> None:
     assert len(errors) == 1
     assert isinstance(errors[0], ValueError)
     assert str(errors[0]) == "bad input"
-    assert results == ["GOOD"]
+    assert lines == ["bad: started", "GOOD"]
+
+
+def test_worker_reports_error_before_first_line() -> None:
+    input_queue: Queue[object] = Queue()
+    lines: list[str] = []
+    errors: list[Exception] = []
+    completed = Event()
+
+    def process(text: str) -> Iterator[str]:
+        raise ValueError("could not start")
+        yield text
+
+    def on_error(error: Exception) -> None:
+        errors.append(error)
+        completed.set()
+
+    worker = BackgroundWorker(
+        input_queue=input_queue,
+        process=process,
+        on_line=lines.append,
+        on_error=on_error,
+    )
+
+    worker.start()
+    try:
+        input_queue.put("hello")
+        assert completed.wait(timeout=1)
+    finally:
+        worker.stop()
+
+    assert lines == []
+    assert len(errors) == 1
+    assert isinstance(errors[0], ValueError)
+    assert str(errors[0]) == "could not start"
+
+
+def test_worker_rejects_plain_string_as_line_stream() -> None:
+    input_queue: Queue[object] = Queue()
+    errors: list[Exception] = []
+    completed = Event()
+
+    def on_error(error: Exception) -> None:
+        errors.append(error)
+        completed.set()
+
+    worker = BackgroundWorker(
+        input_queue=input_queue,
+        process=lambda text: text.upper(),
+        on_line=lambda line: None,
+        on_error=on_error,
+    )
+
+    worker.start()
+    try:
+        input_queue.put("hello")
+        assert completed.wait(timeout=1)
+    finally:
+        worker.stop()
+
+    assert len(errors) == 1
+    assert isinstance(errors[0], TypeError)
+    assert str(errors[0]) == (
+        "Background processor must return an iterable of lines, not a string"
+    )
+
+
+def test_worker_rejects_non_string_line() -> None:
+    input_queue: Queue[object] = Queue()
+    lines: list[str] = []
+    errors: list[Exception] = []
+    completed = Event()
+
+    def on_error(error: Exception) -> None:
+        errors.append(error)
+        completed.set()
+
+    worker = BackgroundWorker(
+        input_queue=input_queue,
+        process=lambda text: ("valid", 5),
+        on_line=lines.append,
+        on_error=on_error,
+    )
+
+    worker.start()
+    try:
+        input_queue.put("hello")
+        assert completed.wait(timeout=1)
+    finally:
+        worker.stop()
+
+    assert lines == ["valid"]
+    assert len(errors) == 1
+    assert isinstance(errors[0], TypeError)
+    assert str(errors[0]) == "Background processor must yield only text lines"
+
+
+def test_worker_stop_drains_queued_streams() -> None:
+    input_queue: Queue[object] = Queue()
+    lines: list[str] = []
+    worker = BackgroundWorker(
+        input_queue=input_queue,
+        process=lambda text: (f"{text}: started", f"{text}: finished"),
+        on_line=lines.append,
+        on_error=lambda error: None,
+    )
+
+    worker.start()
+    input_queue.put("first")
+    input_queue.put("second")
+    worker.stop()
+
+    assert lines == [
+        "first: started",
+        "first: finished",
+        "second: started",
+        "second: finished",
+    ]
+    assert input_queue.unfinished_tasks == 0
+    assert worker.is_running is False
 
 
 def test_worker_rejects_second_start() -> None:
     input_queue: Queue[object] = Queue()
     worker = BackgroundWorker(
         input_queue=input_queue,
-        process=lambda text: text,
-        on_result=lambda result: None,
+        process=lambda text: (text,),
+        on_line=lambda line: None,
         on_error=lambda error: None,
     )
 

@@ -14,6 +14,7 @@ def test_handle_submit_clears_and_enqueues_input() -> None:
         submit_text=submit_text,
     )
     event = MagicMock()
+    event.current_buffer = input_area.buffer
 
     with patch("swarnim_agent.cli.controller.run_in_terminal") as run_in_terminal:
         controller.handle_submit(event)
@@ -39,6 +40,7 @@ def test_handle_submit_exits_for_exit_command() -> None:
         submit_text=submit_text,
     )
     event = MagicMock()
+    event.current_buffer = input_area.buffer
 
     with patch("swarnim_agent.cli.controller.run_in_terminal") as run_in_terminal:
         controller.handle_submit(event)
@@ -62,7 +64,7 @@ def test_handle_exit_closes_application() -> None:
     event.app.exit.assert_called_once_with()
 
 
-def test_render_result_prints_background_output() -> None:
+def test_render_line_prints_background_output() -> None:
     controller = CLIController(
         TextArea(multiline=False, height=1),
         prompt_text="> ",
@@ -70,7 +72,7 @@ def test_render_result_prints_background_output() -> None:
     )
 
     with patch("swarnim_agent.cli.controller.print_formatted_text") as print_text:
-        controller.render_result("5")
+        controller.render_line("5")
 
     print_text.assert_called_once_with("5")
 

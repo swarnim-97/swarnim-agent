@@ -6,6 +6,7 @@ from threading import Thread
 _STOP = object()
 
 
+# Owns the queue/thread lifecycle so agents remain synchronous and testable.
 class BackgroundWorker:
     """Process queued text on one managed background thread."""
 
@@ -44,10 +45,13 @@ class BackgroundWorker:
         if self._thread is None:
             return
 
-        self._input_queue.put(_STOP) # “After processing earlier items, exit your processing loop.”
-        self._thread.join() # This blocks the thread executing stop() until the worker thread has completely exited.
+        # Places shutdown after pending FIFO work instead of interrupting it.
+        self._input_queue.put(_STOP)
+        # Prevents stop() from returning while the managed thread is still alive.
+        self._thread.join()
         self._thread = None
 
+    # Consumes FIFO work until the private stop object reaches the worker.
     def _process_loop(self) -> None:
         while True:
             item = self._input_queue.get()
@@ -64,8 +68,10 @@ class BackgroundWorker:
 
                 self._publish_lines(item)
             finally:
-                self._input_queue.task_done() # “The item previously taken using get() has now finished processing.”
+                # Balances every successful get(), including the stop object.
+                self._input_queue.task_done()
 
+    # Catches processor failures without misclassifying line callback failures.
     def _publish_lines(self, text: str) -> None:
         """Publish each valid line while isolating processor failures."""
         try:

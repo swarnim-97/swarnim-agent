@@ -1,0 +1,23 @@
+#model:
+#  provider: nvidia
+#  name: deepseek-ai/deepseek-v4-pro-0813
+#  max_tokens: 1024
+#
+#providers:
+#  nvidia:
+#    api_mode: chat_completions
+#    base_url: https://integrate.api.nvidia.com/v1
+#    api_key_env: NVIDIA_API_KEY
+
+
+
+model:
+  provider: ollama
+  name: qwen3.5:cloud
+  max_tokens: 1024
+
+providers:
+  ollama:
+    api_mode: chat_completions
+    base_url: http://127.0.0.1:11434/v1
+    api_key_env: OLLAMA_API_KEY

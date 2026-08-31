@@ -8,6 +8,7 @@ from prompt_toolkit.widgets import TextArea
 from swarnim_agent.cli.handlers import should_exit
 
 
+# Keeps prompt-toolkit events and terminal redraw coordination out of agents.
 class CLIController:
     """Handle terminal events and coordinate updates to CLI components."""
 

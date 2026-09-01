@@ -1,3 +1,4 @@
+from collections.abc import Iterable
 from typing import Any
 
 from openai import OpenAI
@@ -21,8 +22,8 @@ class OpenAIChatExecutor:
             else OpenAI(base_url=base_url, api_key=api_key)
         )
 
-    def execute(self, request: ProviderRequest) -> object:
-        """Send one request through the Chat Completions SDK surface."""
+    def execute(self, request: ProviderRequest) -> Iterable[object]:
+        """Send one request and return the raw Chat Completions stream."""
         if request.api_mode != "chat_completions":
             raise ValueError(
                 f"OpenAIChatExecutor cannot execute API mode '{request.api_mode}'"

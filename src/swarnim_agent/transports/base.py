@@ -2,7 +2,7 @@ from typing import Protocol
 
 from swarnim_agent.transports.types import (
     ChatMessage,
-    NormalizedResponse,
+    NormalizedChunk,
     ProviderRequest,
 )
 
@@ -25,6 +25,6 @@ class ProviderTransport(Protocol):
         """Convert internal messages into a provider-ready request."""
         ...
 
-    def normalize_response(self, raw_response: object) -> NormalizedResponse:
-        """Convert a raw provider result into the shared response shape."""
+    def normalize_chunk(self, raw_chunk: object) -> NormalizedChunk:
+        """Convert one raw stream chunk into the shared chunk shape."""
         ...

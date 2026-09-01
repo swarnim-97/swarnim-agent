@@ -3,13 +3,13 @@ from typing import Any
 from swarnim_agent.transports.errors import ProviderResponseError
 from swarnim_agent.transports.types import (
     ChatMessage,
-    NormalizedResponse,
+    NormalizedChunk,
     ProviderRequest,
     Usage,
 )
 
 
-# Reuses one OpenAI-compatible wire format across vendors such as NVIDIA.
+# Reuses one Chat Completions wire format across compatible providers.
 class ChatCompletionsTransport:
     """Build and normalize OpenAI-compatible Chat Completions data."""
 
@@ -24,7 +24,7 @@ class ChatCompletionsTransport:
         messages: list[ChatMessage],
         max_tokens: int,
     ) -> ProviderRequest:
-        """Build a non-streaming Chat Completions request."""
+        """Build a streaming Chat Completions request."""
         return ProviderRequest(
             api_mode=self.api_mode,
             parameters={
@@ -34,30 +34,39 @@ class ChatCompletionsTransport:
                     for message in messages
                 ],
                 "max_tokens": max_tokens,
-                "stream": False,
+                "stream": True,
             },
         )
 
-    # Defensively reduces an SDK-specific response to the fields our agent uses.
-    def normalize_response(self, raw_response: object) -> NormalizedResponse:
-        choices = getattr(raw_response, "choices", None)
+    # Accepts content, finish, and usage-only events without leaking SDK shapes.
+    def normalize_chunk(self, raw_chunk: object) -> NormalizedChunk:
+        missing = object()
+        choices = getattr(raw_chunk, "choices", missing)
+        if choices is missing or choices is None:
+            raise ProviderResponseError("Provider stream chunk has no choices field")
+
+        usage = self._normalize_usage(getattr(raw_chunk, "usage", None))
         if not choices:
-            raise ProviderResponseError("Provider response contains no choices")
+            return NormalizedChunk(usage=usage)
 
         first_choice = choices[0]
-        message = getattr(first_choice, "message", None)
-        content = getattr(message, "content", None)
-        if not isinstance(content, str) or not content.strip():
-            raise ProviderResponseError("Provider response contains no text content")
+        delta = getattr(first_choice, "delta", None)
+        content = getattr(delta, "content", None)
+        if content is not None and not isinstance(content, str):
+            raise ProviderResponseError(
+                "Provider stream chunk contains non-text content"
+            )
 
         finish_reason = getattr(first_choice, "finish_reason", None)
-        if not isinstance(finish_reason, str) or not finish_reason:
-            finish_reason = "unknown"
+        if finish_reason is not None and not isinstance(finish_reason, str):
+            raise ProviderResponseError(
+                "Provider stream chunk has an invalid finish reason"
+            )
 
-        return NormalizedResponse(
-            content=content.strip(),
+        return NormalizedChunk(
+            text=content or "",
             finish_reason=finish_reason,
-            usage=self._normalize_usage(getattr(raw_response, "usage", None)),
+            usage=usage,
         )
 
     def _normalize_usage(self, raw_usage: Any) -> Usage | None:

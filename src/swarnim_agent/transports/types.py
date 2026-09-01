@@ -32,9 +32,9 @@ class Usage:
 
 
 @dataclass(frozen=True)
-class NormalizedResponse:
-    """Expose the small response surface consumed by the current agent."""
+class NormalizedChunk:
+    """Expose one provider-independent event from a streaming response."""
 
-    content: str
-    finish_reason: str
+    text: str = ""
+    finish_reason: str | None = None
     usage: Usage | None = None

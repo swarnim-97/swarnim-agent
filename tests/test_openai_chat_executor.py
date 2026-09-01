@@ -8,31 +8,31 @@ from swarnim_agent.transports.types import ProviderRequest
 
 def test_executor_calls_openai_compatible_client() -> None:
     client = MagicMock()
-    expected_response = object()
-    client.chat.completions.create.return_value = expected_response
+    expected_stream = iter([object(), object()])
+    client.chat.completions.create.return_value = expected_stream
     executor = OpenAIChatExecutor(
-        base_url="https://integrate.api.nvidia.com/v1",
+        base_url="https://example.com/v1",
         api_key="secret-key",
         client=client,
     )
     request = ProviderRequest(
         api_mode="chat_completions",
-        parameters={"model": "model-id", "messages": [], "stream": False},
+        parameters={"model": "model-id", "messages": [], "stream": True},
     )
 
-    response = executor.execute(request)
+    stream = executor.execute(request)
 
-    assert response is expected_response
+    assert stream is expected_stream
     client.chat.completions.create.assert_called_once_with(
         model="model-id",
         messages=[],
-        stream=False,
+        stream=True,
     )
 
 
 def test_executor_rejects_other_api_modes() -> None:
     executor = OpenAIChatExecutor(
-        base_url="https://integrate.api.nvidia.com/v1",
+        base_url="https://example.com/v1",
         api_key="secret-key",
         client=MagicMock(),
     )

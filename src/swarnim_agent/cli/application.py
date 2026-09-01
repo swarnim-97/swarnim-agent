@@ -67,7 +67,7 @@ def run_cli() -> None:
         print_formatted_text(f"Configuration error: {error}")
         return
 
-    print_formatted_text(HTML("<b>Swarnim Agent</b> — NVIDIA LLM CLI"))
+    print_formatted_text(HTML("<b>Swarnim Agent</b> — LLM CLI"))
     print_formatted_text(
         "Type a message and press Enter. Use /exit or Ctrl+C to quit."
     )

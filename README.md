@@ -1,10 +1,10 @@
 # Swarnim Agent
 
-This learning-oriented CLI accepts terminal input and sends it to an NVIDIA
-hosted model on a managed background thread. Its provider architecture is split
-into configuration, runtime resolution, request/response transport, network
-execution, and agent orchestration so each responsibility can be learned
-independently.
+This learning-oriented CLI accepts terminal input and sends it to an
+OpenAI-compatible model on a managed background thread. Its architecture is
+split into configuration, runtime resolution, request/response transport,
+network execution, and agent orchestration so each responsibility can be
+learned independently.
 
 ## Setup
 
@@ -12,16 +12,22 @@ independently.
 python -m pip install -e ".[test]"
 ```
 
-## Configure NVIDIA
+## Configure the provider
 
-The repository contains the non-secret provider settings in `config.yaml`.
-Choose the NVIDIA model there:
+The repository contains non-secret provider settings in `config.yaml`. The
+current development configuration uses a local OpenAI-compatible endpoint:
 
 ```yaml
 model:
-  provider: nvidia
-  name: deepseek-ai/deepseek-v4-pro-0813
+  provider: ollama
+  name: qwen3.5:cloud
   max_tokens: 1024
+
+providers:
+  ollama:
+    api_mode: chat_completions
+    base_url: http://127.0.0.1:11434/v1
+    api_key_env: OLLAMA_API_KEY
 ```
 
 Copy the safe secret template into the project root if `.env` does not exist:
@@ -30,10 +36,11 @@ Copy the safe secret template into the project root if `.env` does not exist:
 cp .env.example .env
 ```
 
-Then replace its placeholder:
+The local endpoint requires no real API key, but the OpenAI SDK and current
+runtime require a non-empty placeholder:
 
 ```dotenv
-NVIDIA_API_KEY=your-key
+OLLAMA_API_KEY=ollama
 ```
 
 Non-secret model and provider settings belong in `config.yaml`. Credentials
@@ -65,7 +72,7 @@ A generator produces values lazily and pauses at each yield.
 
 The prompt-toolkit UI thread records and enqueues input. A background worker
 consumes queued text in FIFO order and calls the LLM agent. The transport builds
-and normalizes Chat Completions data, while a separate executor owns the actual
-OpenAI-compatible network call. The first NVIDIA milestone waits for a complete
-response and then renders it as complete lines; token streaming is intentionally
-postponed.
+and normalizes streaming Chat Completions chunks, while a separate executor owns
+the actual OpenAI-compatible network call. A pure line buffer combines partial
+text deltas and renders output only when a complete line is available, flushing
+the final unterminated line when the stream finishes successfully.
